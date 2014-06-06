@@ -144,7 +144,8 @@ public class MozillaView extends GeckoView implements CordovaWebView{
         }    
     }
 
-    private void loadUrlIntoView(String initUrl) {
+    @Override
+    public void loadUrlIntoView(String initUrl) {
         loadUrlIntoView(initUrl, true);
     }
     
@@ -165,8 +166,7 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
     }
 
-
-    protected void stopLoading() {
+    public void stopLoading() {
         // TODO Auto-generated method stub
         
     }
@@ -423,6 +423,44 @@ public class MozillaView extends GeckoView implements CordovaWebView{
     @Override
     public void setLayoutParams(LayoutParams layoutParams) {
         super.setLayoutParams(layoutParams);
+    }
+
+    @Override
+    public View getView() {
+        return this;
+    }
+
+
+
+    @Override
+    public String getUrl() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public boolean isPaused() {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    
+    
+    @Override
+    public CordovaWebViewClient makeWebViewClient() {
+        return new MozillaViewClient();
+    }
+
+    @Override
+    public CordovaChromeClient makeWebChromeClient() {
+        return new MozillaChromeClient();
+    }
+
+
+    @Override
+    public void loadUrlIntoView(String url, int splashscreenTime) {
+        // TODO Auto-generated method stub
+        
     }
 
 }
