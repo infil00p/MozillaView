@@ -1,24 +1,26 @@
 package org.apache.cordova.mozilla;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 
-import org.apache.cordova.AndroidExposedJsApi;
-import org.apache.cordova.CordovaChromeClient;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.CordovaPreferences;
 import org.apache.cordova.CordovaResourceApi;
 import org.apache.cordova.CordovaWebView;
-import org.apache.cordova.CordovaWebViewClient;
 import org.apache.cordova.LOG;
 import org.apache.cordova.NativeToJsMessageQueue;
+import org.apache.cordova.PluginEntry;
 import org.apache.cordova.PluginManager;
 import org.apache.cordova.PluginResult;
+import org.apache.cordova.Whitelist;
 import org.json.JSONException;
 import org.mozilla.gecko.GeckoView;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
@@ -93,21 +95,11 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
     private void setup()
     {
-        pluginManager = new PluginManager(this, this.cordova);
+        pluginManager = new PluginManager(this, this.cordova, null);
         //exposedJsApi = new AndroidExposedJsApi(pluginManager, jsMessageQueue);
         resourceApi = new CordovaResourceApi(this.getContext(), pluginManager);
     }
     
-
-    @Override
-    public void setWebViewClient(CordovaWebViewClient webViewClient) {
-        // We don't need the webViewClient
-    }
-
-    @Override
-    public void setWebChromeClient(CordovaChromeClient webChromeClient) {
-         //We don't need the webChromeClient
-    }
 
     @Override
     public void setId(int i) {
@@ -119,35 +111,18 @@ public class MozillaView extends GeckoView implements CordovaWebView{
         super.setVisibility(invisible);
     }
 
-    @Override
-    public void loadUrl(String url, int splashscreenTime) {
-       
-    }
 
-    @Override
     public void loadUrl(String url) {
-        if (url.equals("about:blank") || url.startsWith("javascript:")) {
-            this.loadUrlNow(url);
+        if(currentBrowser == null)
+        {
+            currentBrowser = this.addBrowser(url);
         }
-        else {
-
-            String initUrl = this.getProperty("url", null);
-
-            // If first page of app, then set URL to load to be the one passed in
-            if (initUrl == null) {
-                this.loadUrlIntoView(url);
-            }
-            // Otherwise use the URL specified in the activity's extras bundle
-            else {
-                this.loadUrlIntoView(initUrl);
-            }
-        }    
+        else
+        {
+            currentBrowser.loadUrl(url);
+        }
     }
 
-    @Override
-    public void loadUrlIntoView(String initUrl) {
-        loadUrlIntoView(initUrl, true);
-    }
     
     /**
      * Load the url into the webview.
@@ -162,7 +137,7 @@ public class MozillaView extends GeckoView implements CordovaWebView{
             this.pluginManager.init();
         }
         
-        loadUrlNow(url);
+        loadUrl(url);
 
     }
 
@@ -225,17 +200,6 @@ public class MozillaView extends GeckoView implements CordovaWebView{
         
     }
 
-    @Override
-    public void postMessage(String id, Object data) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public void addJavascript(String statement) {
-        // TODO Auto-generated method stub
-        
-    }
 
     @Override
     public void sendJavascript(String statememt) {
@@ -243,17 +207,6 @@ public class MozillaView extends GeckoView implements CordovaWebView{
         
     }
 
-    @Override
-    public CordovaChromeClient getWebChromeClient() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public CordovaPlugin getPlugin(String initCallbackClass) {
-        // TODO Auto-generated method stub
-        return null;
-    }
 
     @Override
     public void showWebPage(String errorUrl, boolean b, boolean c,
@@ -286,24 +239,6 @@ public class MozillaView extends GeckoView implements CordovaWebView{
         return false;
     }
 
-    @Override
-    public String exec(String service, String action, String callbackId,
-            String message) throws JSONException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public void setNativeToJsBridgeMode(int parseInt) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public String retrieveJsMessages(boolean equals) {
-        // TODO Auto-generated method stub
-        return null;
-    }
 
     @Override
     public void showCustomView(View view, CustomViewCallback callback) {
@@ -318,23 +253,7 @@ public class MozillaView extends GeckoView implements CordovaWebView{
     }
 
 
-    @Override
-    public boolean onOverrideUrlLoading(String url) {
-        // TODO Auto-generated method stub
-        return false;
-    }
 
-    @Override
-    public void resetJsMessageQueue() {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public void onReset() {
-        // TODO Auto-generated method stub
-        
-    }
 
     @Override
     public int getVisibility() {
@@ -342,27 +261,11 @@ public class MozillaView extends GeckoView implements CordovaWebView{
     }
 
     @Override
-    public void incUrlTimeout() {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
     public void setOverScrollMode(int overScrollNever) {
         super.setOverScrollMode(overScrollNever);
     }
 
-    @Override
-    public void loadUrlNow(String string) {
-        if(currentBrowser == null)
-        {
-            currentBrowser = this.addBrowser(string);
-        }
-        else
-        {
-            currentBrowser.loadUrl(string);
-        }
-    }
+
 
     @Override
     public void setNetworkAvailable(boolean online) {
@@ -374,25 +277,6 @@ public class MozillaView extends GeckoView implements CordovaWebView{
     public CordovaResourceApi getResourceApi() {
         // TODO Auto-generated method stub
         return null;
-    }
-
-    @Override
-    public void bindButton(boolean override) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public void bindButton(String button, boolean override) {
-        // TODO Auto-generated method stub
-        
-    }
-    
-    
-    @Override
-    public boolean isBackButtonBound() {
-        // TODO Auto-generated method stub
-        return false;
     }
 
     @Override
@@ -415,22 +299,9 @@ public class MozillaView extends GeckoView implements CordovaWebView{
     }
 
     @Override
-    public void setLayoutParams(
-            android.widget.LinearLayout.LayoutParams layoutParams) {
-        super.setLayoutParams(layoutParams);
-    }
-
-    @Override
-    public void setLayoutParams(LayoutParams layoutParams) {
-        super.setLayoutParams(layoutParams);
-    }
-
-    @Override
     public View getView() {
         return this;
     }
-
-
 
     @Override
     public String getUrl() {
@@ -439,28 +310,52 @@ public class MozillaView extends GeckoView implements CordovaWebView{
     }
 
     @Override
-    public boolean isPaused() {
+    public void init(CordovaInterface cordova, List<PluginEntry> pluginEntries,
+            Whitelist whitelist, CordovaPreferences preferences) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    /*
+     * WTF is this?
+     * @see org.apache.cordova.CordovaWebView#setButtonPlumbedToJs(int, boolean)
+     */
+    
+    
+    @Override
+    public void setButtonPlumbedToJs(int keyCode, boolean override) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public boolean isButtonPlumbedToJs(int keyCode) {
         // TODO Auto-generated method stub
         return false;
     }
 
-    
-    
     @Override
-    public CordovaWebViewClient makeWebViewClient() {
-        return new MozillaViewClient();
+    public Whitelist getWhitelist() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     @Override
-    public CordovaChromeClient makeWebChromeClient() {
-        return new MozillaChromeClient();
+    public CordovaPreferences getPreferences() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
-
     @Override
-    public void loadUrlIntoView(String url, int splashscreenTime) {
+    public void onFilePickerResult(Uri uri) {
         // TODO Auto-generated method stub
         
+    }
+
+    @Override
+    public Object postMessage(String id, Object data) {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }
