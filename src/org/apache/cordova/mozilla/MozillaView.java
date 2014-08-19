@@ -22,16 +22,25 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowManager;
 import android.webkit.WebChromeClient.CustomViewCallback;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout.LayoutParams;
 
 public class MozillaView extends GeckoView implements CordovaWebView{
 
     private static final String TAG = "MozillaView";
+    
+    static final FrameLayout.LayoutParams COVER_SCREEN_GRAVITY_CENTER =
+            new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            Gravity.CENTER);
 
     //The CordovaInterface, we need to have access to this!
     private CordovaInterface cordova;
@@ -41,6 +50,8 @@ public class MozillaView extends GeckoView implements CordovaWebView{
     
     //Geckoview's current browser object! 
     private Browser currentBrowser;
+    private CordovaGeckoViewChrome chrome;
+    private CordovaGeckoViewContent content;
 
     private int loadUrlTimeout;
 
@@ -52,9 +63,16 @@ public class MozillaView extends GeckoView implements CordovaWebView{
         {
             this.cordova = (CordovaInterface) context;
         }
+        
+        /*
+         * Load the chrome and content delegates
+         */
+        chrome = new CordovaGeckoViewChrome();
+        
+        this.setChromeDelegate(chrome);
+        
         this.loadConfiguration();
         this.setup();
-
     }
     
     /**
@@ -95,9 +113,9 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
     private void setup()
     {
-        pluginManager = new PluginManager(this, this.cordova, null);
+        //pluginManager = new PluginManager(this, this.cordova, null);
         //exposedJsApi = new AndroidExposedJsApi(pluginManager, jsMessageQueue);
-        resourceApi = new CordovaResourceApi(this.getContext(), pluginManager);
+        //resourceApi = new CordovaResourceApi(this.getContext(), pluginManager);
     }
     
 
@@ -112,14 +130,18 @@ public class MozillaView extends GeckoView implements CordovaWebView{
     }
 
 
+    /*
+     * (non-Javadoc)
+     * @see org.apache.cordova.CordovaWebView#loadUrl(java.lang.String)
+     */
     public void loadUrl(String url) {
-        if(currentBrowser == null)
+        if(chrome != null)
         {
-            currentBrowser = this.addBrowser(url);
-        }
-        else
-        {
-            currentBrowser.loadUrl(url);
+            currentBrowser = this.getCurrentBrowser();
+            if(currentBrowser != null)
+            {
+                currentBrowser.loadUrl(url);
+            }
         }
     }
 
@@ -134,7 +156,7 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
         if (recreatePlugins) {
             this.url = url;
-            this.pluginManager.init();
+            //this.pluginManager.init();
         }
         
         loadUrl(url);
