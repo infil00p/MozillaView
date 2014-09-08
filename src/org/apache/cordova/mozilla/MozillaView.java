@@ -1,6 +1,7 @@
 package org.apache.cordova.mozilla;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -28,6 +29,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebChromeClient.CustomViewCallback;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout.LayoutParams;
@@ -57,6 +59,11 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
     private CordovaResourceApi resourceApi;
 
+    private long lastMenuEventTime;
+
+    private HashSet<Integer> boundKeyCodes = new HashSet<Integer>();
+
+
     public MozillaView(Context context) {
         super(context);
         if (CordovaInterface.class.isInstance(context))
@@ -68,6 +75,8 @@ public class MozillaView extends GeckoView implements CordovaWebView{
          * Load the chrome and content delegates
          */
         chrome = new CordovaGeckoViewChrome();
+        
+        // Handle the keycodes
         
         this.setChromeDelegate(chrome);
         
@@ -170,6 +179,7 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
     @Override
     public boolean canGoBack() {
+        currentBrowser = this.getCurrentBrowser();
         if(currentBrowser != null)
         {
             return currentBrowser.canGoBack();
@@ -189,12 +199,18 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
     @Override
     public boolean backHistory() {
-        boolean returnValue = currentBrowser.canGoBack();
-        if(returnValue)
+        currentBrowser = this.getCurrentBrowser();
+        if(currentBrowser != null)
         {
-            currentBrowser.goBack();
+            boolean returnValue = currentBrowser.canGoBack();
+            if(returnValue)
+            {
+                currentBrowser.goBack();
+            }
+            return returnValue;
         }
-        return returnValue;
+        else
+            return false;
     }
 
     @Override
@@ -248,19 +264,6 @@ public class MozillaView extends GeckoView implements CordovaWebView{
         // TODO Auto-generated method stub
         return false;
     }
-
-    @Override
-    public boolean onKeyUp(int keyCode, KeyEvent event) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
 
     @Override
     public void showCustomView(View view, CustomViewCallback callback) {
@@ -338,6 +341,97 @@ public class MozillaView extends GeckoView implements CordovaWebView{
         
     }
 
+    /*
+     * onKeyDown
+     */
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event)
+    {
+        if(boundKeyCodes.contains(keyCode))
+        {
+            if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+                    this.loadUrl("javascript:cordova.fireDocumentEvent('volumedownbutton');");
+                    return true;
+            }
+            else if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+                    this.loadUrl("javascript:cordova.fireDocumentEvent('volumeupbutton');");
+                    return true;
+            }
+            else
+            {
+                return super.onKeyDown(keyCode, event);
+            }
+        }
+        else if(keyCode == KeyEvent.KEYCODE_BACK)
+        {
+            return !(this.startOfHistory()) || isButtonPlumbedToJs(KeyEvent.KEYCODE_BACK);
+
+        }
+        else if(keyCode == KeyEvent.KEYCODE_MENU)
+        {
+            //How did we get here?  Is there a childView?
+            View childView = this.getFocusedChild();
+            if(childView != null)
+            {
+                //Make sure we close the keyboard if it's present
+                InputMethodManager imm = (InputMethodManager) cordova.getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(childView.getWindowToken(), 0);
+                cordova.getActivity().openOptionsMenu();
+                return true;
+            } else {
+                return super.onKeyDown(keyCode, event);
+            }
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    private boolean startOfHistory() {
+        //Figure out if we're at the start of GeckoView's history, and return
+        currentBrowser = this.getCurrentBrowser();
+        if(currentBrowser != null)
+            return !currentBrowser.canGoBack();
+        else
+            return true;
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event)
+    {
+        // If back key
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+                // The webview is currently displayed
+                // If back key is bound, then send event to JavaScript
+                if (isButtonPlumbedToJs(KeyEvent.KEYCODE_BACK)) {
+                    this.loadUrl("javascript:cordova.fireDocumentEvent('backbutton');");
+                    return true;
+                } else {
+                    // If not bound
+                    // Go to previous page in webview if it is possible to go back
+                    if (this.backHistory()) {
+                        return true;
+                    }
+                    // If not, then invoke default behavior
+                }
+        }
+        // Legacy
+        else if (keyCode == KeyEvent.KEYCODE_MENU) {
+            if (this.lastMenuEventTime < event.getEventTime()) {
+                this.loadUrl("javascript:cordova.fireDocumentEvent('menubutton');");
+            }
+            this.lastMenuEventTime = event.getEventTime();
+            return super.onKeyUp(keyCode, event);
+        }
+        // If search key
+        else if (keyCode == KeyEvent.KEYCODE_SEARCH) {
+            this.loadUrl("javascript:cordova.fireDocumentEvent('searchbutton');");
+            return true;
+        }
+
+        //Does webkit change this behavior?
+        return super.onKeyUp(keyCode, event);
+    }
+
+    
     /*
      * WTF is this?
      * @see org.apache.cordova.CordovaWebView#setButtonPlumbedToJs(int, boolean)
