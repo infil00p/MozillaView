@@ -336,7 +336,8 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
     @Override
     public void init(CordovaInterface cordova, List<PluginEntry> pluginEntries,
-            Whitelist whitelist, CordovaPreferences preferences) {
+            Whitelist internalWhitelist, Whitelist externalWhitelist,
+            CordovaPreferences preferences) {
         // TODO Auto-generated method stub
         
     }
@@ -470,6 +471,14 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
     @Override
     public Object postMessage(String id, Object data) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+
+
+    @Override
+    public Whitelist getExternalWhitelist() {
         // TODO Auto-generated method stub
         return null;
     }
