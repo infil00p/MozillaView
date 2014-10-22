@@ -431,7 +431,6 @@ public class MozillaView extends GeckoView implements CordovaWebView{
         //Does webkit change this behavior?
         return super.onKeyUp(keyCode, event);
     }
-
     
     /*
      * WTF is this?
