@@ -1,6 +1,10 @@
 package org.apache.cordova.mozilla;
 
 import org.apache.cordova.Config;
+import org.apache.cordova.CordovaInterface;
+import org.apache.cordova.NativeToJsMessageQueue;
+import org.apache.cordova.PluginManager;
+import org.apache.cordova.PluginResult;
 import org.mozilla.gecko.GeckoView;
 import org.mozilla.gecko.GeckoView.MessageResult;
 import org.mozilla.gecko.GeckoViewChrome;
@@ -13,7 +17,17 @@ import android.view.View;
 
 public class CordovaGeckoViewChrome extends GeckoViewChrome {
     
+    PluginManager pluginManager;
+    NativeToJsMessageQueue jsMessageQueue; //Exists for code re-use, may not be used for a final release
+    
     String LOGTAG = "CordovaGeckoViewChrome";
+    
+    CordovaGeckoViewChrome(MozillaView view, CordovaInterface cordova)
+    {
+        view.getPluginManager();
+        jsMessageQueue = new NativeToJsMessageQueue(view, cordova);
+        pluginManager = view.getPluginManager();
+    }
     
     public void onReady(GeckoView view) {
         Log.i(LOGTAG, "Gecko is ready");
@@ -26,8 +40,36 @@ public class CordovaGeckoViewChrome extends GeckoViewChrome {
         view.setVisibility(View.VISIBLE);
     }
     
-    public void onScriptMessage(GeckoView view, Bundle bundle, MessageResult msg) {
-        //I'm not sure how this works yet!
+    public void onScriptMessage(GeckoView view, Bundle input, MessageResult out) {
+        // First, get the parameters being passed into the service
+        
+        String callbackId = input.getString("callbackId");
+        String service = input.getString("service");
+        String action = input.getString("action");
+        //We do the parsing on the plugin itself, not here.  This should be JSON
+        String rawArgs = input.getString("args");
+        
+        //Do nothing if we're just polling, otherwise 
+        if(!action.equals("gap_poll"))
+        {
+            if(pluginManager != null)
+            {
+                pluginManager.exec(service, action, callbackId, rawArgs);
+            }
+        }        
+        
+        //By default we do exec chaining
+        Bundle ret = new Bundle();
+        // Get the messages and add them 
+        String value = jsMessageQueue.popAndEncode(false);
+        ret.putString("result", value);
+        out.success(ret);
+        
     }
 
+    public void addPluginResult(PluginResult result, String callbackId)
+    {
+        jsMessageQueue.addPluginResult(result, callbackId);
+    }
+    
 }

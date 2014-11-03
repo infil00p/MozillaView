@@ -23,6 +23,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -74,7 +75,7 @@ public class MozillaView extends GeckoView implements CordovaWebView{
         /*
          * Load the chrome and content delegates
          */
-        chrome = new CordovaGeckoViewChrome();
+        chrome = new CordovaGeckoViewChrome(this, cordova);
         
         // Handle the keycodes
         
@@ -122,9 +123,9 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
     private void setup()
     {
-        //pluginManager = new PluginManager(this, this.cordova, null);
+        pluginManager = new PluginManager(this, this.cordova, null);
         //exposedJsApi = new AndroidExposedJsApi(pluginManager, jsMessageQueue);
-        //resourceApi = new CordovaResourceApi(this.getContext(), pluginManager);
+        resourceApi = new CordovaResourceApi(this.getContext(), pluginManager);
     }
     
 
@@ -165,7 +166,7 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
         if (recreatePlugins) {
             this.url = url;
-            //this.pluginManager.init();
+            this.pluginManager.init();
         }
         
         loadUrl(url);
@@ -240,9 +241,8 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
 
     @Override
-    public void sendJavascript(String statememt) {
-        // TODO Auto-generated method stub
-        
+    public void sendJavascript(String statement) {
+        Log.d(TAG, "Use the bridge: " + statement);
     }
 
 
@@ -300,27 +300,19 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
     @Override
     public CordovaResourceApi getResourceApi() {
-        // TODO Auto-generated method stub
-        return null;
+        return resourceApi;
     }
 
     @Override
     public void sendPluginResult(PluginResult cr, String callbackId) {
-        // TODO Auto-generated method stub
-        
+        chrome.addPluginResult(cr, callbackId);
     }
 
-    /*
-     * (non-Javadoc)
-     * This is Mozilla's method
-     * 
-     * @see org.apache.cordova.CordovaWebView#getPluginManager()
-     */
     
     @Override
     public PluginManager getPluginManager() {
         // TODO Auto-generated method stub
-        return null;
+        return pluginManager;
     }
 
     @Override
@@ -338,8 +330,7 @@ public class MozillaView extends GeckoView implements CordovaWebView{
     public void init(CordovaInterface cordova, List<PluginEntry> pluginEntries,
             Whitelist internalWhitelist, Whitelist externalWhitelist,
             CordovaPreferences preferences) {
-        // TODO Auto-generated method stub
-        
+        importScript("resource://android/assets/www/bridge/mozilla.js");
     }
 
     /*
@@ -473,8 +464,6 @@ public class MozillaView extends GeckoView implements CordovaWebView{
         // TODO Auto-generated method stub
         return null;
     }
-
-
 
     @Override
     public Whitelist getExternalWhitelist() {
