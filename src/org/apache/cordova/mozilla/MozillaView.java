@@ -123,9 +123,7 @@ public class MozillaView extends GeckoView implements CordovaWebView{
 
     private void setup()
     {
-        pluginManager = new PluginManager(this, this.cordova, null);
-        //exposedJsApi = new AndroidExposedJsApi(pluginManager, jsMessageQueue);
-        resourceApi = new CordovaResourceApi(this.getContext(), pluginManager);
+        
     }
     
 
@@ -330,6 +328,12 @@ public class MozillaView extends GeckoView implements CordovaWebView{
     public void init(CordovaInterface cordova, List<PluginEntry> pluginEntries,
             Whitelist internalWhitelist, Whitelist externalWhitelist,
             CordovaPreferences preferences) {
+        
+        //Setup the resourceApi and pluginManager
+        pluginManager = new PluginManager(this, this.cordova, pluginEntries);
+        resourceApi = new CordovaResourceApi(this.getContext(), pluginManager);
+        
+        //Load the mozilla JS bridge 
         importScript("resource://android/assets/www/bridge/mozilla.js");
     }
 
