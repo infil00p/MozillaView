@@ -82,7 +82,6 @@ public class MozillaView extends GeckoView implements CordovaWebView{
         this.setChromeDelegate(chrome);
         
         this.loadConfiguration();
-        this.setup();
     }
     
     /**
@@ -120,12 +119,6 @@ public class MozillaView extends GeckoView implements CordovaWebView{
         }
         return p.toString();
     }
-
-    private void setup()
-    {
-        
-    }
-    
 
     @Override
     public void setId(int i) {

@@ -24,9 +24,10 @@ public class CordovaGeckoViewChrome extends GeckoViewChrome {
     
     CordovaGeckoViewChrome(MozillaView view, CordovaInterface cordova)
     {
-        view.getPluginManager();
         jsMessageQueue = new NativeToJsMessageQueue(view, cordova);
         pluginManager = view.getPluginManager();
+        //We only do polling
+        jsMessageQueue.setBridgeMode(0);
     }
     
     public void onReady(GeckoView view) {
@@ -49,11 +50,17 @@ public class CordovaGeckoViewChrome extends GeckoViewChrome {
         //We do the parsing on the plugin itself, not here.  This should be JSON
         String rawArgs = input.getString("args");
         
+        
         //Do nothing if we're just polling, otherwise 
         if(!action.equals("gap_poll"))
         {
+            if(pluginManager == null)
+            {
+                pluginManager = ((MozillaView) view).getPluginManager();
+            }
             if(pluginManager != null)
             {
+                Log.d(LOGTAG, "RAWARGS:" + rawArgs);
                 pluginManager.exec(service, action, callbackId, rawArgs);
             }
         }        
